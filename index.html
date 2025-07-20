@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Διατμητική Ανηγμένη Παραμόρφωση</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #ffffff;
+    }
+    #sliderContainer {
+      position: absolute;
+      bottom: 20px;
+      background: rgba(178, 178, 178, 0.9);
+      padding: 10px;
+      border-radius: 4px;
+      font-family: Roboto;
+    }
+    #title {
+      position: absolute;
+      top: 20px;
+      color: #ffffff;
+      font-family: Roboto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    input[type=range] {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div id="title">
+    <h1>ΑΝΤΟΧΗ ΥΛΙΚΩΝ</h1>
+    <h2>Διατμητική Ανηγμένη Παραμόρφωση</h2>
+    <p>Χρησιμοποιήστε το ρυθμιστικό για να αλλάξετε την γωνία διατμητικής παραμόρφωσης.</p>
+  </div>
+  <div id="sliderContainer">
+    <label for="gammaRange">γ: <span id="gammaValue">0.0</span>°</label><br>
+    <input type="range" id="gammaRange" min="-45" max="45" value="0">
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <script>
+    // === Three.js scene setup ===
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    camera.position.set(4, 3, 6);
+    camera.lookAt(0, 0, 0);
+
+    // lights
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // base cube
+    const baseGeometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshNormalMaterial({ opacity: 0.8, transparent: true });
+    let cube = new THREE.Mesh(baseGeometry.clone(), material);
+    scene.add(cube);
+
+    // shear function: apply shear in X by Y -> x' = x + s * y
+    function applyShear(geometry, gammaRad) {
+      const s = Math.tan(gammaRad);
+      const shearMatrix = new THREE.Matrix4().set(
+        1, 0, 0, 0,
+        s, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+      geometry.applyMatrix4(shearMatrix);
+    }
+
+    // UI
+    const slider = document.getElementById('gammaRange');
+    const gammaValue = document.getElementById('gammaValue');
+
+    slider.addEventListener('input', () => {
+      const deg = parseFloat(slider.value);
+      gammaValue.textContent = deg.toFixed(1);
+      const rad = deg * Math.PI / 180;
+
+      // update cube geometry
+      scene.remove(cube);
+      const geom = baseGeometry.clone();
+      applyShear(geom, rad);
+      cube = new THREE.Mesh(geom, material);
+      scene.add(cube);
+    });
+
+    // handle resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      cube.rotation.y += 0.001;
+      cube.rotation.x += 0.001;
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
