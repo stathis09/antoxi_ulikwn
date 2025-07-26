@@ -1,121 +1,381 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Διατμητική Ανηγμένη Παραμόρφωση</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: #ffffff;
-    }
-    #sliderContainer {
-      position: absolute;
-      bottom: 20px;
-      background: rgba(178, 178, 178, 0.9);
-      padding: 10px;
-      border-radius: 4px;
-      font-family: Roboto;
-    }
-    #title {
-      position: absolute;
-      top: 20px;
-      color: #ffffff;
-      font-family: Roboto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    input[type=range] {
-      width: 200px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Διατμητική Ανηγμένη Παραμόρφωση</title>
+<style>
+body {
+margin: 0;
+overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+height: 100vh;
+background: #ffffff;
+ }
+#sliderContainer {
+position: absolute;
+bottom: 20px;
+background: rgba(178, 178, 178, 0.9);
+padding: 10px;
+border-radius: 4px;
+font-family: Roboto;
+ }
+#title {
+position: absolute;
+top: 20px;
+color: #000000;
+font-family: Roboto;
+display: flex;
+flex-direction: column;
+align-items: center;
+ }
+input[type=range] {
+width: 200px;
+ }
+#instructions {
+position: absolute;
+top: 120px;
+right: 20px;
+color: #666;
+font-family: Roboto;
+font-size: 14px;
+background: rgba(255,255,255,0.8);
+padding: 10px;
+border-radius: 5px;
+ }
+</style>
 </head>
 <body>
-  <div id="title">
-    <h1>ΑΝΤΟΧΗ ΥΛΙΚΩΝ</h1>
-    <h2>Διατμητική Ανηγμένη Παραμόρφωση</h2>
-    <p>Χρησιμοποιήστε το ρυθμιστικό για να αλλάξετε την γωνία διατμητικής παραμόρφωσης.</p>
-  </div>
-  <div id="sliderContainer">
-    <label for="gammaRange">γ: <span id="gammaValue">0.0</span>°</label><br>
-    <input type="range" id="gammaRange" min="-45" max="45" value="0">
-  </div>
+<div id="title">
+<h1>ΑΝΤΟΧΗ ΥΛΙΚΩΝ</h1>
+<h2>Διατμητική Ανηγμένη Παραμόρφωση</h2>
+<p>Χρησιμοποιήστε το ρυθμιστικό για να αλλάξετε την γωνία διατμητικής παραμόρφωσης.</p>
+</div>
+<div id="instructions">
+<strong>Controls:</strong><br>
+• Drag to rotate the cube<br>
+• Use slider to adjust shear angle<br>
+• Red line = X axis<br>
+• Green line = Y axis<br>
+• Red arrows = Shear forces (τ)
+</div>
+<div id="sliderContainer">
+<button id="resetButton" style="width: 100%; margin-bottom: 10px; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Roboto; font-size: 14px;">Reset Cube</button>
+<label for="gammaRange">γ: <span id="gammaValue">0.0</span>°</label><br>
+<input type="range" id="gammaRange" min="-45" max="45" value="0">
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+<script>
+// === Three.js scene setup ===
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+camera.position.set(4, 3, 6);
+camera.lookAt(0, 0, 0);
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
-  <script>
-    // === Three.js scene setup ===
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+// lights
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(5, 10, 7);
+scene.add(dirLight);
+scene.add(new THREE.AmbientLight(0x404040));
 
-    camera.position.set(4, 3, 6);
-    camera.lookAt(0, 0, 0);
+// Create a group to hold cube and axes
+const cubeGroup = new THREE.Group();
+cubeGroup.position.y = -0.5; // Move the entire group down by 0.5 units
+scene.add(cubeGroup);
 
-    // lights
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(5, 10, 7);
-    scene.add(dirLight);
-    scene.add(new THREE.AmbientLight(0x404040));
+// base cube
+const baseGeometry = new THREE.BoxGeometry(2, 2, 2);
+const material = new THREE.MeshNormalMaterial({ opacity: 0.8, transparent: true });
+let cube = new THREE.Mesh(baseGeometry.clone(), material);
+cubeGroup.add(cube);
 
-    // base cube
-    const baseGeometry = new THREE.BoxGeometry(2, 2, 2);
-    const material = new THREE.MeshNormalMaterial({ opacity: 0.8, transparent: true });
-    let cube = new THREE.Mesh(baseGeometry.clone(), material);
-    scene.add(cube);
+// Create X and Y axes
+function createAxes() {
+  // X-axis (red)
+  const xGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-1.5, 0, 0),
+    new THREE.Vector3(1.5, 0, 0)
+  ]);
+  const xMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 3 });
+  const xAxis = new THREE.Line(xGeometry, xMaterial);
+  
+  // Y-axis (green)
+  const yGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, -1.5, 0),
+    new THREE.Vector3(0, 1.5, 0)
+  ]);
+  const yMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
+  const yAxis = new THREE.Line(yGeometry, yMaterial);
+  
+  return { xAxis, yAxis };
+}
 
-    // shear function: apply shear in X by Y -> x' = x + s * y
-    function applyShear(geometry, gammaRad) {
-      const s = Math.tan(gammaRad);
-      const shearMatrix = new THREE.Matrix4().set(
-        1, 0, 0, 0,
-        s, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-      );
-      geometry.applyMatrix4(shearMatrix);
-    }
+// Create shear force arrows
+function createShearForces() {
+  const arrowMaterial = new THREE.MeshLambertMaterial({ color: 0xff2222 });
+  
+  const forces = [];
+  
+  // Create 4 force arrows (top and bottom faces)
+  for (let i = 0; i < 4; i++) {
+    const forceGroup = new THREE.Group();
+    
+    // Arrow shaft (rectangular for better visibility)
+    const shaftGeometry = new THREE.BoxGeometry(0.5, 0.06, 0.06);
+    const shaft = new THREE.Mesh(shaftGeometry, arrowMaterial);
+    forceGroup.add(shaft);
+    
+    // Arrow head (larger and more pointed)
+    const headGeometry = new THREE.ConeGeometry(0.08, 0.2, 6);
+    const head = new THREE.Mesh(headGeometry, arrowMaterial);
+    head.rotation.z = -Math.PI / 2; // Point to the right
+    head.position.x = 0.35; // Position at end of shaft
+    forceGroup.add(head);
+    
+    // Add outline for better visibility
+    const outlineMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+    
+    // Shaft outline
+    const shaftOutlineGeometry = new THREE.BoxGeometry(0.52, 0.08, 0.08);
+    const shaftOutline = new THREE.Mesh(shaftOutlineGeometry, outlineMaterial);
+    forceGroup.add(shaftOutline);
+    
+    // Head outline
+    const headOutlineGeometry = new THREE.ConeGeometry(0.09, 0.22, 6);
+    const headOutline = new THREE.Mesh(headOutlineGeometry, outlineMaterial);
+    headOutline.rotation.z = -Math.PI / 2;
+    headOutline.position.x = 0.35;
+    forceGroup.add(headOutline);
+    
+    forces.push(forceGroup);
+  }
+  
+  return forces;
+}
 
-    // UI
-    const slider = document.getElementById('gammaRange');
-    const gammaValue = document.getElementById('gammaValue');
+let { xAxis, yAxis } = createAxes();
+cubeGroup.add(xAxis);
+cubeGroup.add(yAxis);
 
-    slider.addEventListener('input', () => {
-      const deg = parseFloat(slider.value);
-      gammaValue.textContent = deg.toFixed(1);
-      const rad = deg * Math.PI / 180;
+// Create and add shear forces
+let shearForces = createShearForces();
+shearForces.forEach(force => cubeGroup.add(force));
 
-      // update cube geometry
-      scene.remove(cube);
-      const geom = baseGeometry.clone();
-      applyShear(geom, rad);
-      cube = new THREE.Mesh(geom, material);
-      scene.add(cube);
-    });
+// Position shear forces initially
+function positionShearForces(forces, gammaRad = 0) {
+  const s = Math.tan(gammaRad);
+  const gamma = gammaRad * 180 / Math.PI; // Convert to degrees
+  
+  // Hide all forces first
+  forces.forEach(force => force.visible = false);
+  
+  if (gamma > 0) {
+    // Positive shear: right arrow above, up arrow on right side
+    // Arrow 1: Above the cube - follows the top face center with clearance
+    const horizontalMovement = s * 1; // How much horizontal arrows move
+    forces[0].position.set(0 + horizontalMovement, 1.5, 0); // Moves horizontally
+    forces[0].rotation.y = 0; // Pointing right
+    forces[0].rotation.z = 0; // Horizontal
+    forces[0].visible = true;
+    
+    // Arrow 2: Right side of cube - moves vertically UP when γ > 0
+    forces[1].position.set(1.5, 0 + horizontalMovement, 0); // Moves vertically UP by same amount
+    forces[1].rotation.y = 0;
+    forces[1].rotation.z = Math.PI / 2; // Pointing up
+    forces[1].visible = true;
+    
+  } else if (gamma < 0) {
+    // Negative shear: right arrow below, down arrow on right side
+    // Arrow 1: Below the cube - follows the bottom face center with clearance
+    const horizontalMovement = s * (-1); // How much horizontal arrows move
+    forces[2].position.set(0 + horizontalMovement, -1.5, 0); // Moves horizontally
+    forces[2].rotation.y = 0; // Pointing right
+    forces[2].rotation.z = 0; // Horizontal
+    forces[2].visible = true;
+    
+    // Arrow 2: Right side of cube - moves vertically DOWN when γ < 0
+    forces[3].position.set(1.5, 0 - Math.abs(horizontalMovement), 0); // Moves vertically DOWN by same amount
+    forces[3].rotation.y = 0;
+    forces[3].rotation.z = -Math.PI / 2; // Pointing down
+    forces[3].visible = true;
+  }
+  // When gamma = 0, no arrows are shown (all remain invisible)
+}
 
-    // handle resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+// Initial positioning
+positionShearForces(shearForces);
 
-    // animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      cube.rotation.y += 0.001;
-      cube.rotation.x += 0.000;
-      renderer.render(scene, camera);
-    }
-    animate();
-  </script>
+// Mouse controls
+let isMouseDown = false;
+let mouseX = 0;
+let mouseY = 0;
+
+renderer.domElement.addEventListener('mousedown', (event) => {
+  isMouseDown = true;
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+});
+
+renderer.domElement.addEventListener('mousemove', (event) => {
+  if (!isMouseDown) return;
+  
+  const deltaX = event.clientX - mouseX;
+  const deltaY = event.clientY - mouseY;
+  
+  cubeGroup.rotation.y += deltaX * 0.01;
+  cubeGroup.rotation.x += deltaY * 0.01;
+  
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+});
+
+renderer.domElement.addEventListener('mouseup', () => {
+  isMouseDown = false;
+});
+
+renderer.domElement.addEventListener('mouseleave', () => {
+  isMouseDown = false;
+});
+
+// Touch controls for mobile
+renderer.domElement.addEventListener('touchstart', (event) => {
+  if (event.touches.length === 1) {
+    isMouseDown = true;
+    mouseX = event.touches[0].clientX;
+    mouseY = event.touches[0].clientY;
+  }
+});
+
+renderer.domElement.addEventListener('touchmove', (event) => {
+  if (!isMouseDown || event.touches.length !== 1) return;
+  
+  const deltaX = event.touches[0].clientX - mouseX;
+  const deltaY = event.touches[0].clientY - mouseY;
+  
+  cubeGroup.rotation.y += deltaX * 0.01;
+  cubeGroup.rotation.x += deltaY * 0.01;
+  
+  mouseX = event.touches[0].clientX;
+  mouseY = event.touches[0].clientY;
+  
+  event.preventDefault();
+});
+
+renderer.domElement.addEventListener('touchend', () => {
+  isMouseDown = false;
+});
+
+// shear function: apply shear in X by Y -> x' = x + s * y
+function applyShear(geometry, gammaRad) {
+const s = Math.tan(gammaRad);
+const shearMatrix = new THREE.Matrix4().set(
+1, 0, 0, 0,
+s, 1, 0, 0,
+0, 0, 1, 0,
+0, 0, 0, 1
+ );
+geometry.applyMatrix4(shearMatrix);
+ }
+
+// Function to update axes with shear
+function updateAxes(gammaRad) {
+  cubeGroup.remove(xAxis);
+  cubeGroup.remove(yAxis);
+  
+  const s = Math.tan(gammaRad);
+  
+  // X-axis (red) - gets sheared
+  const xGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-1.5 + s * 0, 0, 0),
+    new THREE.Vector3(1.5 + s * 0, 0, 0)
+  ]);
+  const xMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 3 });
+  xAxis = new THREE.Line(xGeometry, xMaterial);
+  
+  // Y-axis (green) - gets sheared
+  const yGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(s * (-1.5), -1.5, 0),
+    new THREE.Vector3(s * 1.5, 1.5, 0)
+  ]);
+  const yMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
+  yAxis = new THREE.Line(yGeometry, yMaterial);
+  
+  cubeGroup.add(xAxis);
+  cubeGroup.add(yAxis);
+  
+  // Update shear forces position
+  positionShearForces(shearForces, gammaRad);
+}
+
+// UI
+const slider = document.getElementById('gammaRange');
+const gammaValue = document.getElementById('gammaValue');
+const resetButton = document.getElementById('resetButton');
+
+// Reset button functionality
+resetButton.addEventListener('click', () => {
+  // Reset slider to 0
+  slider.value = 0;
+  gammaValue.textContent = '0.0';
+  
+  // Reset cube to original form
+  cubeGroup.remove(cube);
+  const geom = baseGeometry.clone();
+  cube = new THREE.Mesh(geom, material);
+  cubeGroup.add(cube);
+  
+  // Reset axes and forces
+  updateAxes(0);
+  
+  // Reset cube rotation to initial position
+  cubeGroup.rotation.x = 0;
+  cubeGroup.rotation.y = 0;
+  cubeGroup.rotation.z = 0;
+});
+
+// Add hover effect to reset button
+resetButton.addEventListener('mouseenter', () => {
+  resetButton.style.background = '#45a049';
+});
+
+resetButton.addEventListener('mouseleave', () => {
+  resetButton.style.background = '#4CAF50';
+});
+
+slider.addEventListener('input', () => {
+const deg = parseFloat(slider.value);
+gammaValue.textContent = deg.toFixed(1);
+const rad = deg * Math.PI / 180;
+// update cube geometry
+cubeGroup.remove(cube);
+const geom = baseGeometry.clone();
+applyShear(geom, rad);
+cube = new THREE.Mesh(geom, material);
+cubeGroup.add(cube);
+
+// update axes
+updateAxes(rad);
+ });
+
+// handle resize
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+ });
+
+// animation loop (no automatic rotation)
+function animate() {
+requestAnimationFrame(animate);
+renderer.render(scene, camera);
+ }
+animate();
+</script>
 </body>
 </html>
